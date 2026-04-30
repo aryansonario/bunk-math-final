@@ -34,8 +34,12 @@ if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
 // ─────────────────────────────────────────────────────────
 // MIDDLEWARE
 // ─────────────────────────────────────────────────────────
+// Trust Railway's proxy (fixes ERR_ERL_UNEXPECTED_X_FORWARDED_FOR)
+app.set('trust proxy', 1);
+
 app.use(cors({ origin: '*' }));
 app.use(express.json({ limit: '15mb' }));
+// Serve static files from root directory (index.html lives here)
 app.use(express.static(__dirname));
 app.use('/api/', rateLimit({ windowMs: 60_000, max: 40, standardHeaders: true, legacyHeaders: false }));
 
@@ -62,27 +66,45 @@ async function erpLogin(username, password) {
   console.log(`[Login] Attempting for ${username.slice(0,10)}...`);
 
   // Step 1: POST to the EduPlus login API
-  const loginRes = await fetch(`${ERP_API}/appUserDetail/NewsignIn`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json, text/plain, */*',
-      'Origin': ERP_UI,
-      'Referer': ERP_UI + '/',
-      'User-Agent': 'Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36',
-    },
-    body: JSON.stringify({ username, password }),
-  });
+  // Try multiple endpoint variations — EduPlus portals differ
+  const ENDPOINTS = [
+    `${ERP_API}/appUserDetail/NewsignIn`,
+    `${ERP_API}/appUserDetail/signIn`,
+    `${ERP_API}/appUserDetail/login`,
+  ];
 
-  const loginData = await loginRes.json().catch(() => null);
-  console.log(`[Login] Response status: ${loginRes.status}, msg: ${loginData?.msg}`);
+  let loginData = null;
+  let loginRes = null;
+
+  for (const endpoint of ENDPOINTS) {
+    try {
+      loginRes = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json, text/plain, */*',
+          'Origin': ERP_UI,
+          'Referer': ERP_UI + '/',
+          'User-Agent': 'Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36',
+        },
+        body: JSON.stringify({ username, password }),
+      });
+      const text = await loginRes.text();
+      console.log(`[Login] ${endpoint} → ${loginRes.status}: ${text.slice(0,200)}`);
+      try { loginData = JSON.parse(text); } catch { loginData = null; }
+      if (loginRes.status !== 404) break; // found the right endpoint
+    } catch(e) {
+      console.log(`[Login] ${endpoint} failed: ${e.message}`);
+    }
+  }
 
   if (!loginData) throw new Error('No response from login API');
 
-  // Check success — EduPlus returns msg:"200" or status 200
-  const ok = loginData.msg === '200' || loginData.statusCode === 200 || loginData.status === '200' || loginRes.status === 200;
+  // Check success
+  const ok = loginData.msg === '200' || loginData.statusCode === 200 || loginData.status === '200' ||
+             (loginRes.status === 200 && !loginData.error);
   if (!ok) {
-    throw new Error(loginData.message || loginData.msg || 'Invalid username or password');
+    throw new Error(loginData.message || loginData.msg || `Login failed (${loginRes.status})`);
   }
 
   // Extract the encrypted auth headers from response
