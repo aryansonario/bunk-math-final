@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#030303">
+<title>BunkMath</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ══════════════════════════════════════════
+   RESET & TOKENS
+══════════════════════════════════════════ */
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#030303;
+  --s0:#080808;--s1:#0f0f0f;--s2:#161616;--s3:#1e1e1e;--s4:#272727;
+  --bd:#1c1c1c;--bd2:#2a2a2a;
+  --green:#00ff87;--red:#ff2d55;--amber:#ffd60a;
+  --blue:#0a84ff;--purple:#bf5af2;
+  --text:#f2f2f2;--muted:#505050;--muted2:#888;
+  --f:'Syne',sans-serif;--m:'JetBrains Mono',monospace;
+}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--f)}
+#app{height:100dvh;display:flex;flex-direction:column;max-width:430px;margin:0 auto}
+
+/* ══════════════════════════════════════════
+   SCREENS (stacked overlays)
+══════════════════════════════════════════ */
+.screen{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 22px;background:var(--bg)}
+
+/* ── LOGIN ── */
+#scr-login .glow{position:absolute;top:-60px;left:50%;transform:translateX(-50%);width:300px;height:300px;background:radial-gradient(circle,rgba(0,255,135,.07) 0%,transparent 70%);pointer-events:none}
+.logo-lg{font-size:40px;font-weight:800;letter-spacing:-2px;background:linear-gradient(135deg,#00ff87 0%,#0a84ff 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px}
+.tagline{font-size:11px;color:var(--muted2);font-family:var(--m);margin-bottom:36px;letter-spacing:.5px}
+.login-card{background:var(--s1);border:1px solid var(--bd2);border-radius:22px;padding:22px;width:100%;max-width:340px}
+.lbl{font-size:9px;font-family:var(--m);color:var(--muted2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px}
+.inp{width:100%;background:var(--s0);border:1px solid var(--bd);border-radius:11px;padding:13px 14px;font-family:var(--m);font-size:14px;color:var(--text);outline:none;transition:border-color .2s;margin-bottom:14px}
+.inp:focus{border-color:var(--green)}
+.inp::placeholder{color:var(--muted)}
+.big-btn{width:100%;padding:14px;border-radius:13px;border:none;background:linear-gradient(135deg,var(--green),var(--blue));color:#000;font-family:var(--f);font-size:15px;font-weight:800;cursor:pointer;transition:opacity .15s;margin-top:2px;letter-spacing:.2px}
+.big-btn:active{opacity:.8}
+.big-btn:disabled{opacity:.35;cursor:not-allowed}
+.err-msg{font-size:11px;color:var(--red);font-family:var(--m);text-align:center;margin-top:11px;min-height:14px;line-height:1.4}
+.login-note{font-size:10px;color:var(--muted);font-family:var(--m);text-align:center;margin-top:14px;line-height:1.6}
+.spin-row{display:flex;align-items:center;justify-content:center;gap:8px;font-size:11px;font-family:var(--m);color:var(--muted2);margin-top:14px}
+.spin{width:14px;height:14px;border:2px solid var(--s3);border-top-color:var(--green);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── BATCH PICKER ── */
+#scr-batch{background:rgba(3,3,3,.97);backdrop-filter:blur(10px)}
+.sheet{background:var(--s1);border:1px solid var(--bd2);border-radius:26px;padding:26px 22px;width:100%;max-width:340px}
+.sheet-title{font-size:24px;font-weight:800;letter-spacing:-.5px;margin-bottom:4px}
+.sheet-sub{font-size:11px;color:var(--muted2);font-family:var(--m);margin-bottom:22px;line-height:1.5}
+.batch-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:18px}
+.bopt{background:var(--s0);border:1px solid var(--bd);border-radius:15px;padding:17px 8px;text-align:center;cursor:pointer;transition:all .18s;user-select:none}
+.bopt:active{transform:scale(.95)}
+.bopt-icon{font-size:26px;margin-bottom:6px}
+.bopt-lbl{font-size:12px;font-weight:700;color:var(--muted2)}
+.bopt.sel{border-color:var(--green);background:rgba(0,255,135,.06)}
+.bopt.sel .bopt-lbl{color:var(--green)}
+
+/* ── TIMETABLE UPLOAD ── */
+#scr-tt{background:rgba(3,3,3,.97);backdrop-filter:blur(10px);justify-content:flex-end;padding-bottom:env(safe-area-inset-bottom,16px)}
+.tt-sheet{background:var(--s1);border:1px solid var(--bd2);border-radius:26px 26px 16px 16px;padding:24px 22px 28px;width:100%;max-width:430px}
+.tt-title{font-size:20px;font-weight:800;margin-bottom:6px}
+.tt-sub{font-size:11px;color:var(--muted2);font-family:var(--m);margin-bottom:20px;line-height:1.5}
+.upload-zone{border:2px dashed var(--bd2);border-radius:14px;padding:28px 16px;text-align:center;cursor:pointer;transition:border-color .2s;margin-bottom:16px;position:relative}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--green)}
+.upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;font-size:0}
+.upload-icon{font-size:32px;margin-bottom:8px}
+.upload-lbl{font-size:12px;color:var(--muted2);font-family:var(--m)}
+.upload-lbl b{color:var(--text)}
+.preview-img{width:100%;border-radius:10px;margin-bottom:14px;max-height:200px;object-fit:cover}
+.tt-status{font-size:11px;font-family:var(--m);color:var(--muted2);text-align:center;margin-top:10px;min-height:16px}
+.skip-link{font-size:11px;color:var(--muted);font-family:var(--m);text-align:center;margin-top:12px;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+
+/* ══════════════════════════════════════════
+   MAIN APP
+══════════════════════════════════════════ */
+.topbar{background:var(--s0);border-bottom:1px solid var(--bd);padding:10px 16px;flex-shrink:0;padding-top:max(10px,env(safe-area-inset-top,10px))}
+.tb-r1{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
+.logo-sm{font-size:20px;font-weight:800;letter-spacing:-.8px;background:linear-gradient(135deg,#00ff87,#0a84ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.user-chip{font-size:9px;font-family:var(--m);color:var(--muted2);background:var(--s2);border:1px solid var(--bd);border-radius:6px;padding:3px 8px;cursor:pointer}
+.tb-r2{display:flex;align-items:center;justify-content:space-between}
+.sync-row{display:flex;align-items:center;gap:6px}
+.sdot{width:6px;height:6px;border-radius:50%;background:var(--muted);flex-shrink:0;transition:background .3s}
+.sdot.live{background:var(--green);box-shadow:0 0 7px var(--green)}
+.sdot.syncing{background:var(--amber);animation:pulse 1s infinite}
+.sdot.err{background:var(--red)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.slbl{font-size:10px;font-family:var(--m);color:var(--muted2)}
+.chip-row{display:flex;align-items:center;gap:6px}
+.sync-btn-sm{font-size:10px;color:var(--muted);background:none;border:1px solid var(--bd);border-radius:6px;padding:3px 9px;cursor:pointer;font-family:var(--f)}
+.overall-chip{background:var(--s2);border:1px solid var(--bd2);border-radius:8px;padding:4px 12px;font-family:var(--m);font-size:16px;font-weight:600;transition:color .3s;min-width:72px;text-align:center}
+
+.tabs{display:flex;background:var(--s0);border-bottom:1px solid var(--bd);flex-shrink:0}
+.tab{flex:1;padding:11px 0;text-align:center;font-size:10px;font-weight:700;letter-spacing:.7px;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;transition:all .18s;text-transform:uppercase;user-select:none}
+.tab.active{color:var(--text);border-bottom-color:var(--green)}
+
+.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain}
+.page{padding:10px 12px 32px}
+
+/* ── TODAY STRIP ── */
+.strip-hdr{font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;padding:12px 0 8px;display:flex;align-items:center;gap:8px;font-family:var(--m)}
+.strip-hdr::after{content:'';flex:1;height:1px;background:var(--bd)}
+.hsc{display:flex;gap:8px;overflow-x:auto;padding-bottom:12px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.hsc::-webkit-scrollbar{display:none}
+.tc{background:var(--s1);border:1px solid var(--bd);border-radius:14px;padding:10px 12px;flex-shrink:0;width:138px;position:relative;overflow:hidden;transition:border-color .2s}
+.tc::after{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.tc.now{border-color:rgba(0,255,135,.3)}.tc.now::after{background:var(--green)}
+.tc.done{opacity:.45}.tc.done::after{background:var(--muted)}
+.tc.up::after{background:var(--blue)}
+.tc-t{font-size:9px;font-family:var(--m);color:var(--muted2);margin-bottom:3px;letter-spacing:.5px}
+.tc-n{font-size:12px;font-weight:700;line-height:1.3;margin-bottom:3px}
+.tc-r{font-size:9px;font-family:var(--m);color:var(--muted);margin-bottom:5px}
+.tc-row2{display:flex;align-items:center;gap:5px}
+.tbadge{font-size:7px;padding:2px 6px;border-radius:4px;font-weight:700;letter-spacing:.3px;text-transform:uppercase}
+.tc-pct{font-size:9px;font-family:var(--m)}
+
+/* ── CARDS ── */
+.filter-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 0 10px}
+.chips{display:flex;gap:5px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{background:var(--s1);border:1px solid var(--bd);border-radius:20px;padding:5px 12px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;color:var(--muted);flex-shrink:0;letter-spacing:.4px;transition:all .15s;user-select:none;text-transform:uppercase}
+.chip.on{border-color:var(--green);color:var(--green);background:rgba(0,255,135,.06)}
+.rst-btn{font-size:10px;color:var(--muted);background:none;border:1px solid var(--bd);border-radius:6px;padding:4px 10px;cursor:pointer;font-family:var(--f);white-space:nowrap;flex-shrink:0}
+
+.card{background:var(--s1);border:1px solid var(--bd);border-radius:16px;padding:13px;margin-bottom:9px;position:relative;overflow:hidden;transition:border-color .2s}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;opacity:.8}
+.card.safe::before{background:linear-gradient(90deg,transparent,var(--green),transparent)}
+.card.warn::before{background:linear-gradient(90deg,transparent,var(--amber),transparent)}
+.card.danger::before{background:linear-gradient(90deg,transparent,var(--red),transparent)}
+.card-top{display:flex;align-items:center;gap:11px}
+.card-info{flex:1;min-width:0}
+.card-name{font-size:13px;font-weight:700;line-height:1.3;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card-meta{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.card-code{font-size:9px;color:var(--muted);font-family:var(--m)}
+.badge{font-size:8px;padding:2px 6px;border-radius:4px;font-weight:700;letter-spacing:.3px;text-transform:uppercase}
+.bT{background:rgba(10,132,255,.12);color:#0a84ff;border:1px solid rgba(10,132,255,.2)}
+.bL{background:rgba(191,90,242,.12);color:#bf5af2;border:1px solid rgba(191,90,242,.2)}
+.bTu{background:rgba(255,214,10,.12);color:#ffd60a;border:1px solid rgba(255,214,10,.2)}
+.sts{display:flex;gap:5px;margin-top:9px}
+.st{background:var(--s0);border:1px solid var(--bd);border-radius:8px;padding:6px 8px;text-align:center;flex:1}
+.stl{font-size:7px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:2px;font-family:var(--m)}
+.stv{font-size:14px;font-weight:700;font-family:var(--m)}
+.bm{margin-top:9px;font-size:11px;font-weight:600;padding:7px 10px;border-radius:8px;font-family:var(--m);letter-spacing:.2px}
+.bms{background:rgba(0,255,135,.06);color:var(--green);border:1px solid rgba(0,255,135,.15)}
+.bmw{background:rgba(255,214,10,.06);color:var(--amber);border:1px solid rgba(255,214,10,.15)}
+.bmd{background:rgba(255,45,85,.06);color:var(--red);border:1px solid rgba(255,45,85,.15)}
+.bmn{background:var(--s0);color:var(--muted);border:1px solid var(--bd)}
+.cbtns{display:flex;gap:7px;margin-top:9px}
+.cbtn{flex:1;border-radius:9px;padding:10px;font-family:var(--f);font-size:12px;font-weight:700;cursor:pointer;transition:all .12s;background:var(--s0);border:1px solid var(--bd);color:var(--text)}
+.cbtn:active{transform:scale(.94)}
+.gbtn{border-color:rgba(255,45,85,.3);color:var(--red)}.gbtn:active{background:rgba(255,45,85,.08)}
+.abtn{border-color:rgba(0,255,135,.3);color:var(--green)}.abtn:active{background:rgba(0,255,135,.08)}
+.rsm{background:none;border:none;color:var(--muted);font-size:10px;cursor:pointer;padding:4px 8px;border-radius:6px;display:block;margin:4px auto 0;font-family:var(--f)}
+.bar{width:100%;height:2px;border-radius:2px;background:var(--s3);margin-top:9px;overflow:hidden}
+.bar-f{height:100%;border-radius:2px;transition:width .55s cubic-bezier(.34,1.56,.64,1)}
+
+/* ── WHAT-IF ── */
+.wi-note{font-size:10px;color:var(--muted);font-family:var(--m);padding:6px 0 12px;line-height:1.6}
+.day-row{display:flex;gap:6px;overflow-x:auto;padding-bottom:10px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.day-row::-webkit-scrollbar{display:none}
+.dbt{background:var(--s1);border:1px solid var(--bd);border-radius:10px;padding:8px 12px;text-align:center;cursor:pointer;font-size:11px;font-weight:700;color:var(--muted);flex-shrink:0;min-width:50px;transition:all .18s;user-select:none}
+.dbt.sel{border-color:var(--green);background:rgba(0,255,135,.07);color:var(--green)}
+.dbt.tod{color:var(--blue);border-color:rgba(10,132,255,.2)}
+.dbt.sel.tod{color:var(--green);border-color:var(--green)}
+.dbt-n{font-size:8px;font-weight:400;margin-top:2px;color:var(--muted);font-family:var(--m)}
+.sg{margin-bottom:13px}
+.sl{font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;padding:0 1px;margin-bottom:7px;display:flex;align-items:center;gap:8px;font-family:var(--m)}
+.sl::after{content:'';flex:1;height:1px;background:var(--bd)}
+.ttr{display:grid;grid-template-columns:62px 1fr 62px;align-items:stretch;background:var(--s0);border:1px solid var(--bd);border-radius:12px;margin-bottom:6px;overflow:hidden;transition:border-color .2s,background .2s}
+.ttr.att{border-color:rgba(0,255,135,.4);background:rgba(0,255,135,.025)}
+.ttr.skp{border-color:rgba(255,45,85,.4);background:rgba(255,45,85,.025)}
+.tta{display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:3px;padding:11px 5px;min-height:64px;user-select:none;transition:background .12s}
+.tta:active{opacity:.6}
+.tta.sa{background:rgba(255,45,85,.1)}.tta.aa{background:rgba(0,255,135,.1)}
+.ttl{border-right:1px solid var(--bd)}.ttr2{border-left:1px solid var(--bd)}
+.tti{font-size:16px;line-height:1}
+.ttlb{font-size:8px;font-weight:700;letter-spacing:.4px;text-transform:uppercase}
+.ttd{width:5px;height:5px;border-radius:50%;margin-top:2px}
+.ttc{padding:9px 7px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.ttn{font-size:11px;font-weight:700;line-height:1.3}
+.ttm{font-size:8px;color:var(--muted);font-family:var(--m)}
+.ttbs{display:flex;align-items:center;gap:4px;justify-content:center;margin-top:3px}
+.ttbg{font-size:7px;padding:1px 5px;border-radius:3px;font-weight:700;letter-spacing:.3px;text-transform:uppercase}
+.ttp{font-size:8px;font-family:var(--m)}
+.ttnote{font-size:7px;color:#2a2a2a;margin-top:2px;font-family:var(--m)}
+.imp{background:var(--s0);border:1px solid var(--bd2);border-radius:14px;padding:15px;margin-top:4px;margin-bottom:14px}
+.imp-t{font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;font-family:var(--m)}
+.imp-big{font-size:30px;font-weight:800;font-family:var(--m);text-align:center;padding:5px 0 3px}
+.imp-d{font-size:11px;font-family:var(--m);padding:3px 10px;border-radius:20px;display:block;text-align:center;margin-bottom:11px}
+.imp-row{display:flex;justify-content:space-between;padding:5px 0;font-size:11px;border-bottom:1px solid #111}
+.imp-row:last-child{border-bottom:none}
+.imp-l{color:var(--muted)}.imp-v{font-family:var(--m);font-weight:700}
+.abox{margin-top:10px;padding:9px 12px;border-radius:9px;font-size:11px;text-align:center;font-weight:700;font-family:var(--m)}
+.empty{color:var(--muted);font-size:12px;text-align:center;padding:48px 0;font-family:var(--m)}
+
+/* ── SUMMARY ── */
+.smg{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:10px 0 15px}
+.ss{background:var(--s1);border:1px solid var(--bd);border-radius:12px;padding:13px;text-align:center}
+.ssv{font-size:26px;font-weight:800;font-family:var(--m);margin-bottom:3px}
+.ssl{font-size:8px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;font-family:var(--m)}
+.sr{background:var(--s1);border:1px solid var(--bd);border-radius:12px;padding:10px 12px;margin-bottom:7px;display:flex;align-items:center;gap:10px}
+.sr.d{border-color:rgba(255,45,85,.2)}.sr.s{border-color:rgba(0,255,135,.15)}
+.slbl{font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;font-family:var(--m)}
+
+/* ── TIMETABLE UPLOAD BUTTON (in settings) ── */
+.upload-tt-btn{width:100%;padding:12px;border-radius:12px;border:1px dashed var(--bd2);background:var(--s1);color:var(--muted2);font-family:var(--f);font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px;transition:all .2s}
+.upload-tt-btn:hover{border-color:var(--green);color:var(--green)}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ════════════════ LOGIN ════════════════ -->
+<div class="screen" id="scr-login">
+  <div class="glow"></div>
+  <div class="logo-lg">BunkMath</div>
+  <div class="tagline">PCCOER · Login with college email</div>
+  <div class="login-card">
+    <div class="lbl">College Email / Username</div>
+    <input class="inp" id="l-prn" type="text" placeholder="aryan.sonar_comp25@pccoer.in" autocomplete="username" autocorrect="off" autocapitalize="off" spellcheck="false">
+    <div class="lbl">Password</div>
+    <input class="inp" id="l-pwd" type="password" placeholder="••••••••" autocomplete="current-password" style="margin-bottom:0">
+    <div class="err-msg" id="l-err"></div>
+    <button class="big-btn" id="l-btn" onclick="doLogin()">Sign In →</button>
+  </div>
+  <div class="login-note">Your password is sent only to the college portal.<br>Never stored on our servers.</div>
+</div>
+
+<!-- ════════════════ BATCH ════════════════ -->
+<div class="screen" id="scr-batch" style="display:none">
+  <div class="sheet">
+    <div class="sheet-title">Your Batch</div>
+    <div class="sheet-sub">This determines which labs &amp; practicals appear in your schedule. You can change this later.</div>
+    <div class="batch-grid">
+      <div class="bopt" data-b="1" onclick="pickB(this)"><div class="bopt-icon">1️⃣</div><div class="bopt-lbl">Batch 1</div></div>
+      <div class="bopt" data-b="2" onclick="pickB(this)"><div class="bopt-icon">2️⃣</div><div class="bopt-lbl">Batch 2</div></div>
+      <div class="bopt" data-b="3" onclick="pickB(this)"><div class="bopt-icon">3️⃣</div><div class="bopt-lbl">Batch 3</div></div>
+    </div>
+    <button class="big-btn" id="b-go" disabled onclick="confirmBatch()">Continue →</button>
+  </div>
+</div>
+
+<!-- ════════════════ TIMETABLE UPLOAD ════════════════ -->
+<div class="screen" id="scr-tt" style="display:none">
+  <div class="tt-sheet">
+    <div class="tt-title">Upload Timetable 📅</div>
+    <div class="tt-sub">Take a photo of your timetable. Gemini AI will read it and set up your schedule automatically. This only needs to be done once.</div>
+    <div class="upload-zone" id="upload-zone">
+      <input type="file" id="tt-file" accept="image/*" onchange="onTTFile(this)">
+      <div class="upload-icon">📷</div>
+      <div class="upload-lbl"><b>Tap to upload</b> or take photo<br><span style="font-size:9px">JPG, PNG — your timetable image</span></div>
+    </div>
+    <img id="tt-preview" class="preview-img" style="display:none">
+    <button class="big-btn" id="tt-btn" disabled onclick="parseTimetable()">Analyse with Gemini →</button>
+    <div class="tt-status" id="tt-status"></div>
+    <div class="skip-link" onclick="skipTT()">Skip for now — use default schedule</div>
+  </div>
+</div>
+
+<!-- ════════════════ MAIN APP ════════════════ -->
+<div id="main" style="display:none;flex:1;flex-direction:column;height:100%;overflow:hidden">
+
+  <div class="topbar">
+    <div class="tb-r1">
+      <div class="logo-sm">BunkMath</div>
+      <div class="user-chip" id="user-chip" onclick="showSettings()">CO25PCR0369 · B2 ▾</div>
+    </div>
+    <div class="tb-r2">
+      <div class="sync-row">
+        <div class="sdot" id="sdot"></div>
+        <div class="slbl" id="slbl">–</div>
+      </div>
+      <div class="chip-row">
+        <button class="sync-btn-sm" id="sync-btn" onclick="triggerSync()">↻ Sync</button>
+        <div class="overall-chip" id="ov-chip">–</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="sw('today')">Today</div>
+    <div class="tab" onclick="sw('all')">All</div>
+    <div class="tab" onclick="sw('whatif')">What-If</div>
+    <div class="tab" onclick="sw('summary')">Summary</div>
+  </div>
+
+  <div class="scroll" id="scroll">
+    <!-- TODAY -->
+    <div id="pg-today" class="page" style="padding-top:0">
+      <div class="strip-hdr">Today's Classes</div>
+      <div class="hsc" id="today-strip"></div>
+      <div class="filter-bar">
+        <div class="chips" id="chips-today"></div>
+        <button class="rst-btn" onclick="resetAll()">↺ Reset</button>
+      </div>
+      <div id="cards-today"></div>
+    </div>
+    <!-- ALL -->
+    <div id="pg-all" class="page" style="display:none">
+      <div class="filter-bar">
+        <div class="chips" id="chips-all"></div>
+        <button class="rst-btn" onclick="resetAll()">↺ Reset</button>
+      </div>
+      <div id="cards-all"></div>
+    </div>
+    <!-- WHAT-IF -->
+    <div id="pg-whatif" class="page" style="display:none">
+      <div class="wi-note">Your batch's schedule. 👻 Skip or ✅ Attend each class. Tap again to undo.</div>
+      <div class="day-row" id="day-row"></div>
+      <div id="tt-slots"></div>
+      <div id="imp-box"></div>
+    </div>
+    <!-- SUMMARY -->
+    <div id="pg-summary" class="page" style="display:none">
+      <div id="sum-content"></div>
+    </div>
+  </div>
+
+</div><!-- #main -->
+
+</div><!-- #app -->
+
+<script>
+// ══════════════════════════════════════════
+//  CONFIG — point this to your deployed server
+// ══════════════════════════════════════════
+const SERVER = ''; // e.g. 'https://bunkmath.railway.app' — leave empty for same-origin
+
+// ══════════════════════════════════════════
+//  BUILT-IN FALLBACK TIMETABLE (Division H)
+//  Used when user skips upload or upload fails
+// ══════════════════════════════════════════
+const FALLBACK_TT = {
+  Mon:[
+    {subject:'Python Programming', slot:'Pre-Lunch',  room:'303', batches:[], type:'Theory'},
+    {subject:'Basic EEE',          slot:'Pre-Lunch',  room:'205', batches:['2'], type:'Lab'},
+    {subject:'Engineering Physics',slot:'Pre-Lunch',  room:'210', batches:['1'], type:'Lab'},
+    {subject:'Engg. Mechanics',    slot:'Pre-Lunch',  room:'203', batches:['3'], type:'Theory'},
+    {subject:'Disaster Management',slot:'Post-Lunch', room:'303', batches:[], type:'Theory'},
+    {subject:'Engineering MathematicsII',slot:'Post-Lunch',room:'303',batches:[],type:'Theory'},
+    {subject:'LifeSkills-II',      slot:'Short Break',room:'Yoga',batches:['1'],type:'Lab'},
+    {subject:'Communication Skills',slot:'Short Break',room:'206',batches:['2'],type:'Lab'},
+    {subject:'Manufacturing Practices',slot:'Short Break',room:'110',batches:['3'],type:'Lab'},
+    {subject:'Engg. Mechanics',    slot:'Short Break',room:'Civil1/303',batches:[],type:'Theory'},
+  ],
+  Tue:[
+    {subject:'Engineering Physics',slot:'Pre-Lunch',  room:'303', batches:[], type:'Theory'},
+    {subject:'Engg. Mechanics',    slot:'Pre-Lunch',  room:'Civil1/303',batches:[],type:'Theory'},
+    {subject:'Basic EEE',          slot:'Pre-Lunch',  room:'303', batches:[], type:'Theory'},
+    {subject:'Engineering Physics',slot:'Post-Lunch', room:'210', batches:['2'],type:'Lab'},
+    {subject:'Basic EEE',          slot:'Post-Lunch', room:'205', batches:['3'],type:'Lab'},
+    {subject:'Engg. Mechanics',    slot:'Post-Lunch', room:'203', batches:['1'],type:'Lab'},
+    {subject:'Engineering MathematicsII',slot:'Short Break',room:'318',batches:['1'],type:'Tutorial'},
+    {subject:'Python Programming', slot:'Short Break',room:'313', batches:['2'],type:'Lab'},
+    {subject:'Manufacturing Practices',slot:'Short Break',room:'110',batches:['3'],type:'Lab'},
+  ],
+  Wed:[
+    {subject:'Engineering MathematicsII',slot:'Pre-Lunch',room:'318',batches:[],type:'Theory'},
+    {subject:'Engineering MathematicsII',slot:'Pre-Lunch',room:'318',batches:['2'],type:'Tutorial'},
+    {subject:'Python Programming', slot:'Pre-Lunch',  room:'313', batches:['3'],type:'Theory'},
+    {subject:'Manufacturing Practices',slot:'Pre-Lunch',room:'110',batches:['1'],type:'Theory'},
+    {subject:'LifeSkills-II',      slot:'Post-Lunch', room:'Yoga',batches:['2'],type:'Lab'},
+    {subject:'Communication Skills',slot:'Post-Lunch',room:'206', batches:['3'],type:'Lab'},
+    {subject:'Python Programming', slot:'Short Break',room:'318', batches:[], type:'Theory'},
+    {subject:'Engg. Mechanics',    slot:'Short Break',room:'Civil1/318',batches:[],type:'Theory'},
+  ],
+  Thu:[
+    {subject:'Engineering Physics',slot:'Pre-Lunch',  room:'303', batches:[], type:'Theory'},
+    {subject:'Basic EEE',          slot:'Pre-Lunch',  room:'303', batches:[], type:'Theory'},
+    {subject:'Engineering MathematicsII',slot:'Pre-Lunch',room:'303',batches:[],type:'Theory'},
+    {subject:'Engineering MathematicsII',slot:'Post-Lunch',room:'303',batches:['3'],type:'Tutorial'},
+    {subject:'Python Programming', slot:'Post-Lunch', room:'313', batches:['1'],type:'Theory'},
+    {subject:'Manufacturing Practices',slot:'Post-Lunch',room:'110',batches:['2'],type:'Lab'},
+    {subject:'Engineering Physics',slot:'Short Break',room:'210', batches:['3'],type:'Lab'},
+    {subject:'Basic EEE',          slot:'Short Break',room:'205', batches:['1'],type:'Lab'},
+    {subject:'Engg. Mechanics',    slot:'Short Break',room:'203', batches:['2'],type:'Lab'},
+  ],
+  Fri:[
+    {subject:'Communication Skills',slot:'Pre-Lunch', room:'303', batches:[], type:'Theory'},
+    {subject:'LifeSkills-II',      slot:'Pre-Lunch',  room:'Yoga',batches:['3'],type:'Lab'},
+    {subject:'Communication Skills',slot:'Pre-Lunch', room:'206', batches:['1'],type:'Lab'},
+    {subject:'Basic EEE',          slot:'Post-Lunch', room:'318', batches:[], type:'Theory'},
+    {subject:'LifeSkills-II',      slot:'Post-Lunch', room:'318', batches:[], type:'Theory'},
+    {subject:'Manufacturing Practices',slot:'Short Break',room:'303',batches:[],type:'Theory'},
+    {subject:'Engineering Physics',slot:'Short Break',room:'303', batches:[], type:'Theory'},
+  ],
+  Sat:[
+    {subject:'Engineering Physics',slot:'Pre-Lunch',  room:'303', batches:[], type:'Theory'},
+  ],
+};
+
+const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const SLOT_H = {'Pre-Lunch':10,'Post-Lunch':13,'Short Break':15};
+const KW_MAP = {
+  'python':      {kw:'Python',        types:['Theory','Lab']},
+  'physics':     {kw:'Physics',       types:['Theory','Lab']},
+  'math':        {kw:'Math',          types:['Theory','Tutorial']},
+  'mechanic':    {kw:'Mechanics',     types:['Theory','Lab']},
+  'electrical':  {kw:'Electrical',    types:['Theory','Lab']},
+  'eee':         {kw:'Electrical',    types:['Theory','Lab']},
+  'beee':        {kw:'Electrical',    types:['Theory','Lab']},
+  'communic':    {kw:'Communication', types:['Theory','Lab']},
+  'lifeskill':   {kw:'Life',          types:['Theory','Lab']},
+  'life':        {kw:'Life',          types:['Theory','Lab']},
+  'disaster':    {kw:'Disaster',      types:['Theory']},
+  'manufactur':  {kw:'Manufactur',    types:['Theory','Lab']},
+  'workshop':    {kw:'Manufactur',    types:['Theory','Lab']},
+};
+
+// ══════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════
+let username='', password='', batch='2';
+let state=[];
+let timetable=null;  // the active timetable (parsed or fallback)
+let filter='All', curTab='today', selDay=null, wiSt={};
+let syncing=false;
+let ttFileB64=null, ttMime='image/jpeg';
+
+// ══════════════════════════════════════════
+//  STORAGE
+// ══════════════════════════════════════════
+const S = {
+  get:(k,fb=null)=>{ try{const v=localStorage.getItem('bm_'+k);return v!=null?JSON.parse(v):fb;}catch{return fb;} },
+  set:(k,v)=>{ try{localStorage.setItem('bm_'+k,JSON.stringify(v));}catch{} },
+};
+
+const api = (path,opts={}) => fetch((SERVER||'')+path, {
+  headers:{'Content-Type':'application/json',...(opts.headers||{})},
+  ...opts,
+}).then(r=>r.json());
+
+// ══════════════════════════════════════════
+//  LOGIN
+// ══════════════════════════════════════════
+async function doLogin(){
+  const p = document.getElementById('l-prn').value.trim();
+  const w = document.getElementById('l-pwd').value;
+  if(!p||!w){setErr('Enter username and password');return;}
+
+  const btn=document.getElementById('l-btn');
+  btn.disabled=true; btn.textContent='Signing in...';
+  setErr('');
+
+  try {
+    const j = await api('/api/login',{method:'POST',body:JSON.stringify({username:p,password:w})});
+    if(j.ok){
+      username=p; password=w;
+      S.set('username',p); S.set('pw',w);   // stored locally on device only
+      processData(j.data, j.lastSync);
+      batch = S.get('batch','2');
+      if(!S.get('batch')){
+        showScreen('scr-batch');
+      } else if(!S.get('timetable') && !S.get('ttSkipped')){
+        showScreen('scr-tt');
+      } else {
+        loadTimetable();
+        enterApp();
+      }
+    } else {
+      setErr(j.error||'Login failed. Check credentials.');
+    }
+  } catch(e){
+    setErr('Cannot reach server. Is it deployed?');
+  }
+  btn.disabled=false; btn.textContent='Sign In →';
+}
+
+function setErr(m){ document.getElementById('l-err').textContent=m; }
+
+// ══════════════════════════════════════════
+//  BATCH
+// ══════════════════════════════════════════
+let selBatch=null;
+function pickB(el){
+  document.querySelectorAll('.bopt').forEach(e=>e.classList.remove('sel'));
+  el.classList.add('sel'); selBatch=el.dataset.b;
+  document.getElementById('b-go').disabled=false;
+}
+function confirmBatch(){
+  if(!selBatch)return;
+  batch=selBatch; S.set('batch',batch);
+  if(!S.get('timetable')&&!S.get('ttSkipped')){
+    showScreen('scr-tt');
+  } else {
+    loadTimetable();
+    enterApp();
+  }
+}
+
+// ══════════════════════════════════════════
+//  TIMETABLE UPLOAD
+// ══════════════════════════════════════════
+function onTTFile(input){
+  const file=input.files[0];if(!file)return;
+  ttMime=file.type||'image/jpeg';
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const b64=e.target.result.split(',')[1];
+    ttFileB64=b64;
+    const prev=document.getElementById('tt-preview');
+    prev.src=e.target.result; prev.style.display='block';
+    document.getElementById('tt-btn').disabled=false;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function parseTimetable(){
+  if(!ttFileB64){alert('Select an image first');return;}
+  const btn=document.getElementById('tt-btn');
+  btn.disabled=true; btn.textContent='Analysing...';
+  document.getElementById('tt-status').textContent='Sending to Gemini Flash...';
+
+  try {
+    const j=await api('/api/parse-timetable',{
+      method:'POST',
+      body:JSON.stringify({image:ttFileB64,mimeType:ttMime,username}),
+    });
+    if(j.ok){
+      S.set('timetable',j.timetable);
+      timetable=j.timetable;
+      document.getElementById('tt-status').textContent='✓ Timetable parsed successfully!';
+      setTimeout(()=>{loadTimetable();enterApp();},1200);
+    } else {
+      document.getElementById('tt-status').textContent='Error: '+j.error;
+      btn.disabled=false; btn.textContent='Try Again';
+    }
+  } catch(e){
+    document.getElementById('tt-status').textContent='Server error: '+e.message;
+    btn.disabled=false; btn.textContent='Try Again';
+  }
+}
+
+function skipTT(){
+  S.set('ttSkipped',true);
+  timetable=null; // will use fallback
+  loadTimetable();
+  enterApp();
+}
+
+function loadTimetable(){
+  const saved=S.get('timetable');
+  if(saved) timetable=saved;
+  else timetable=null; // use FALLBACK_TT
+}
+
+// ══════════════════════════════════════════
+//  ENTER APP
+// ══════════════════════════════════════════
+function enterApp(){
+  showScreen(null);
+  const m=document.getElementById('main');
+  m.style.display='flex';
+  document.getElementById('user-chip').textContent=`${username} · B${batch} ▾`;
+  const tod=DAYS[new Date().getDay()];
+  if(getEntries(tod).length) selDay=tod;
+  renderAll();
+  setSS('live','Synced '+fmtT(S.get('lastSync')));
+}
+
+function showScreen(id){
+  ['scr-login','scr-batch','scr-tt'].forEach(s=>{
+    document.getElementById(s).style.display=s===id?'flex':'none';
+  });
+}
+
+// ══════════════════════════════════════════
+//  SYNC
+// ══════════════════════════════════════════
+async function triggerSync(){
+  if(syncing)return;
+  syncing=true;
+  document.getElementById('sync-btn').disabled=true;
+  setSS('syncing','Syncing portal...');
+
+  try {
+    const j=await api('/api/sync',{method:'POST',body:JSON.stringify({username,password:S.get('pw')})});
+    if(j.ok){
+      processData(j.data,j.lastSync);
+      setSS('live','Synced '+fmtT(j.lastSync));
+    } else {
+      setSS('err',j.error||'Sync failed');
+    }
+  } catch(e){
+    setSS('err','Server unreachable');
+  }
+  syncing=false;
+  document.getElementById('sync-btn').disabled=false;
+}
+
+function processData(data,lastSync){
+  if(!data?.subjects)return;
+  S.set('subjects',data.subjects);
+  S.set('lastSync',lastSync);
+  S.set('learner',data.learner);
+  state=data.subjects.map(s=>({...s,da:0,dt:0}));
+  if(document.getElementById('main').style.display!=='none') renderAll();
+}
+
+// ══════════════════════════════════════════
+//  TIMETABLE HELPERS
+// ══════════════════════════════════════════
+function todayKey(){ return DAYS[new Date().getDay()]; }
+
+function getEntries(day){
+  const src = timetable?.schedule || FALLBACK_TT;
+  const raw = src[day] || [];
+  return raw.filter(e=>{
+    const bs = e.batches||[];
+    return bs.length===0 || bs.map(String).includes(String(batch));
+  });
+}
+
+// Match timetable entry to state subject
+function findIdx(entry){
+  const subj = (entry.subject||'').toLowerCase();
+  const type  = entry.type||'Theory';
+
+  // Try keyword match
+  for(const [kw,meta] of Object.entries(KW_MAP)){
+    if(subj.includes(kw)){
+      // Match by keyword + type
+      let i=state.findIndex(s=>s.name.toLowerCase().includes(meta.kw.toLowerCase())&&s.type===type);
+      if(i>=0)return i;
+      // Relax type match
+      i=state.findIndex(s=>s.name.toLowerCase().includes(meta.kw.toLowerCase()));
+      if(i>=0)return i;
+    }
+  }
+  // Last resort: substring match on name
+  const words=subj.split(' ').filter(w=>w.length>4);
+  for(const w of words){
+    const i=state.findIndex(s=>s.name.toLowerCase().includes(w));
+    if(i>=0)return i;
+  }
+  return -1;
+}
+
+// ══════════════════════════════════════════
+//  MATH
+// ══════════════════════════════════════════
+function pct(a,t){return t?a/t*100:0;}
+function safeSkips(a,t){return Math.floor(a/0.75)-t;}
+function reach75(a,t){return Math.ceil((0.75*t-a)/0.25);}
+function overall(){let ta=0,tt=0;state.forEach(s=>{const a=s.attended+s.da,t=s.total+s.dt;if(t>0){ta+=a;tt+=t;}});return tt?ta/tt*100:0;}
+
+// ══════════════════════════════════════════
+//  RING SVG
+// ══════════════════════════════════════════
+function ring(a,t,sz=54){
+  if(!t)return`<svg width="${sz}" height="${sz}" viewBox="0 0 54 54"><circle cx="27" cy="27" r="21" fill="none" stroke="#181818" stroke-width="3.5"/><text x="27" y="31" text-anchor="middle" font-size="9" fill="#444" font-family="JetBrains Mono">N/A</text></svg>`;
+  const p=pct(a,t),r=21,c=2*Math.PI*r,d=Math.min(p,100)/100*c;
+  const col=p>=75?'#00ff87':p>=60?'#ffd60a':'#ff2d55';
+  const trk=p>=75?'#001a09':p>=60?'#1a1300':'#1a0009';
+  return`<svg width="${sz}" height="${sz}" viewBox="0 0 54 54"><circle cx="27" cy="27" r="21" fill="none" stroke="${trk}" stroke-width="3.5"/><circle cx="27" cy="27" r="21" fill="none" stroke="${col}" stroke-width="3.5" stroke-dasharray="${d.toFixed(1)} ${c.toFixed(1)}" stroke-dashoffset="${c/4}" stroke-linecap="round" transform="rotate(-90 27 27)"/><text x="27" y="31" text-anchor="middle" font-size="10" font-weight="700" fill="${col}" font-family="JetBrains Mono">${Math.round(p)}%</text></svg>`;
+}
+
+function bm(a,t){
+  if(!t)return`<div class="bm bmn">— No lectures yet</div>`;
+  const sk=safeSkips(a,t),p=pct(a,t);
+  if(sk>0)return`<div class="bm bms">✓ ${sk} skip${sk!==1?'s':''} left</div>`;
+  if(p>=75)return`<div class="bm bmw">⚡ Edge — don't miss one</div>`;
+  return`<div class="bm bmd">⚠ Need ${reach75(a,t)} more class${reach75(a,t)!==1?'es':''} for 75%</div>`;
+}
+
+function cc(a,t){if(!t)return'';const p=pct(a,t);return p>=75?'safe':p>=60?'warn':'danger';}
+function bc(p){return p>=75?'#00ff87':p>=60?'#ffd60a':'#ff2d55';}
+function typC(t){return t==='Theory'?'bT':t==='Lab'?'bL':'bTu';}
+
+// ══════════════════════════════════════════
+//  CARD RENDER
+// ══════════════════════════════════════════
+function card(i){
+  const s=state[i];const a=s.attended+s.da,t=s.total+s.dt,p=pct(a,t);
+  const has=s.da||s.dt;
+  return`<div class="card ${cc(a,t)}" id="c${i}">
+    <div class="card-top"><div>${ring(a,t)}</div>
+    <div class="card-info">
+      <div class="card-name">${s.name}</div>
+      <div class="card-meta">
+        <span class="card-code">${s.code||''}</span>
+        <span class="badge ${typC(s.type)}">${s.type}</span>
+      </div>
+      <div class="sts">
+        <div class="st"><div class="stl">Present</div><div class="stv">${a}</div></div>
+        <div class="st"><div class="stl">Total</div><div class="stv">${t}</div></div>
+        <div class="st"><div class="stl">%</div><div class="stv" style="color:${bc(p)}">${t?p.toFixed(1):'—'}</div></div>
+        ${has?`<div class="st" style="border-color:#2a2a2a"><div class="stl">Sim</div><div class="stv" style="color:var(--amber)">${s.da>=0?'+':''}${s.da}/${s.dt>=0?'+':''}${s.dt}</div></div>`:''}
+      </div>
+    </div></div>
+    <div class="bar"><div class="bar-f" style="width:${Math.min(p,100)}%;background:${bc(p)}"></div></div>
+    ${bm(a,t)}
+    <div class="cbtns">
+      <button class="cbtn gbtn" onclick="bunk(${i})">👻 Ghost Bunk</button>
+      <button class="cbtn abtn" onclick="attend(${i})">✅ Extra Credit</button>
+    </div>
+    ${has?`<button class="rsm" onclick="rstCard(${i})">↺ reset</button>`:''}
+  </div>`;
+}
+
+function renderCards(cid,chid){
+  const f=state.map((s,i)=>({s,i})).filter(({s})=>filter==='All'||s.type===filter);
+  const el=document.getElementById(cid);
+  if(el)el.innerHTML=f.length?f.map(({i})=>card(i)).join(''):'<div class="empty">No subjects</div>';
+  renderChips(chid);
+  updateOverall();
+}
+
+function renderChips(id){
+  const el=document.getElementById(id);if(!el)return;
+  el.innerHTML=['All','Theory','Lab','Tutorial'].map(f=>
+    `<div class="chip ${f===filter?'on':''}" onclick="setFilter('${f}')">${f}</div>`).join('');
+}
+
+function setFilter(f){filter=f;renderCards('cards-today','chips-today');renderCards('cards-all','chips-all');}
+function updateOverall(){
+  const p=overall();
+  const el=document.getElementById('ov-chip');if(!el)return;
+  el.textContent=p.toFixed(2)+'%';
+  el.style.color=p>=75?'#00ff87':p>=60?'#ffd60a':'#ff2d55';
+}
+function bunk(i){state[i].dt++;refresh(i);}
+function attend(i){state[i].da++;state[i].dt++;refresh(i);}
+function rstCard(i){state[i].da=0;state[i].dt=0;refresh(i);}
+function resetAll(){state.forEach((_,i)=>{state[i].da=0;state[i].dt=0;});renderCards('cards-today','chips-today');renderCards('cards-all','chips-all');if(curTab==='whatif')renderWhatIf();}
+function refresh(i){
+  const el=document.getElementById('c'+i);
+  if(el){const d=document.createElement('div');d.innerHTML=card(i);el.replaceWith(d.firstChild);}
+  updateOverall();renderToday();
+  if(curTab==='whatif')renderImpact(getEntries(selDay||todayKey()));
+}
+
+// ══════════════════════════════════════════
+//  TODAY STRIP
+// ══════════════════════════════════════════
+function renderToday(){
+  const today=todayKey();
+  const entries=getEntries(today);
+  const el=document.getElementById('today-strip');if(!el)return;
+  if(!entries.length){el.innerHTML='<div style="color:var(--muted);font-size:12px;font-family:var(--m);padding:16px 0">No classes today 🎉</div>';return;}
+  const h=new Date().getHours();
+  el.innerHTML=entries.map(e=>{
+    const si=findIdx(e);const s=si>=0?state[si]:null;
+    const a=s?s.attended+s.da:0,t=s?s.total+s.dt:0,p=pct(a,t);
+    const pCol=p>=75?'#00ff87':p>=60?'#ffd60a':'#ff2d55';
+    const sh=SLOT_H[e.slot]||12;
+    const status=h<sh?'up':h<sh+2?'now':'done';
+    const typ=e.type||'Theory';
+    const tc=typ==='Theory'?'#0a84ff':typ==='Lab'?'#bf5af2':'#ffd60a';
+    const tb=typ==='Theory'?'rgba(10,132,255,.1)':typ==='Lab'?'rgba(191,90,242,.1)':'rgba(255,214,10,.1)';
+    const shortName=(e.subject||'').split(' ').slice(0,2).join(' ');
+    return`<div class="tc ${status}">
+      <div class="tc-t">${status==='now'?'🟢 NOW':status==='done'?'✓ Done':e.slot}</div>
+      <div class="tc-n">${shortName}</div>
+      <div class="tc-r">Rm ${e.room||'—'}</div>
+      <div class="tc-row2">
+        <span class="tbadge" style="background:${tb};color:${tc};border:1px solid ${tc}30">${typ}</span>
+        ${t?`<span class="tc-pct" style="color:${pCol}">${p.toFixed(0)}%</span>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════
+//  TAB SWITCHING
+// ══════════════════════════════════════════
+function sw(t){
+  curTab=t;
+  ['today','all','whatif','summary'].forEach((id,i)=>{
+    document.getElementById('pg-'+id).style.display=id===t?'block':'none';
+    document.querySelectorAll('.tab')[i].classList.toggle('active',id===t);
+  });
+  document.getElementById('scroll').scrollTop=0;
+  if(t==='today'){renderCards('cards-today','chips-today');renderToday();}
+  if(t==='all')renderCards('cards-all','chips-all');
+  if(t==='whatif')renderWhatIf();
+  if(t==='summary')renderSummary();
+}
+
+// ══════════════════════════════════════════
+//  WHAT-IF
+// ══════════════════════════════════════════
+function getWI(d,i){return(wiSt[d]&&wiSt[d][i])||null;}
+function setWI(d,i,a){if(!wiSt[d])wiSt[d]={};wiSt[d][i]=(getWI(d,i)===a)?null:a;renderWhatIf();}
+
+function renderWhatIf(){
+  const tod=todayKey();
+  const src=timetable?.schedule||FALLBACK_TT;
+  const days=Object.keys(src);
+  document.getElementById('day-row').innerHTML=days.map(d=>{
+    const n=getEntries(d).length;
+    return`<div class="dbt ${d===selDay?'sel':''} ${d===tod?'tod':''}" onclick="selD('${d}')">
+      ${d}${d===tod?' •':''}
+      <div class="dbt-n">${n}cl</div>
+    </div>`;
+  }).join('');
+
+  if(!selDay){document.getElementById('tt-slots').innerHTML='<div class="empty">← pick a day</div>';document.getElementById('imp-box').innerHTML='';return;}
+  const entries=getEntries(selDay);
+  if(!entries.length){document.getElementById('tt-slots').innerHTML='<div class="empty">No classes for batch '+batch+' on '+selDay+'</div>';document.getElementById('imp-box').innerHTML='';return;}
+
+  const SO=['Pre-Lunch','Post-Lunch','Short Break'];
+  const SE={'Pre-Lunch':'☀️ Pre-Lunch','Post-Lunch':'🍱 Post-Lunch','Short Break':'⚡ Short Break'};
+  const grp={};
+  entries.forEach((e,i)=>{if(!grp[e.slot])grp[e.slot]=[];grp[e.slot].push({...e,idx:i});});
+
+  let html='';
+  SO.forEach(slot=>{
+    if(!grp[slot])return;
+    html+=`<div class="sg"><div class="sl">${SE[slot]||slot}</div>`;
+    grp[slot].forEach(({idx,...e})=>{
+      const si=findIdx(e);const s=si>=0?state[si]:null;
+      const act=getWI(selDay,idx);
+      const isSk=act==='skip',isAt=act==='attend';
+      const a=s?s.attended+s.da:0,t=s?s.total+s.dt:0,p=t?pct(a,t):0;
+      const pCol=p>=75?'#00ff87':p>=60?'#ffd60a':'#ff2d55';
+      const typ=e.type||'Theory';
+      const tc=typ==='Theory'?'#0a84ff':typ==='Lab'?'#bf5af2':'#ffd60a';
+      const tb=typ==='Theory'?'rgba(10,132,255,.1)':typ==='Lab'?'rgba(191,90,242,.1)':'rgba(255,214,10,.1)';
+      const shortN=(e.subject||'').split(' ').slice(0,3).join(' ');
+      html+=`<div class="ttr ${isAt?'att':''} ${isSk?'skp':''}">
+        <div class="tta ttl ${isSk?'sa':''}" onclick="setWI('${selDay}',${idx},'skip')">
+          <div class="tti">👻</div><div class="ttlb" style="color:#ff2d55">Skip</div>
+          <div class="ttd" style="background:${isSk?'#ff2d55':'transparent'}"></div>
+        </div>
+        <div class="ttc">
+          <div class="ttn">${shortN}</div>
+          <div class="ttm">Rm ${e.room||'—'}</div>
+          <div class="ttbs">
+            <span class="ttbg" style="background:${tb};color:${tc};border:1px solid ${tc}30">${typ}</span>
+            ${t?`<span class="ttp" style="color:${pCol}">${p.toFixed(0)}%</span>`:''}
+          </div>
+          <div class="ttnote">${e.note||''}</div>
+        </div>
+        <div class="tta ttr2 ${isAt?'aa':''}" onclick="setWI('${selDay}',${idx},'attend')">
+          <div class="tti">✅</div><div class="ttlb" style="color:#00ff87">Attend</div>
+          <div class="ttd" style="background:${isAt?'#00ff87':'transparent'}"></div>
+        </div>
+      </div>`;
+    });
+    html+='</div>';
+  });
+  document.getElementById('tt-slots').innerHTML=html;
+  renderImpact(entries);
+}
+
+function selD(d){selDay=d;renderWhatIf();}
+
+function renderImpact(entries){
+  const orig=overall();
+  const deltas={};
+  entries.forEach((e,i)=>{
+    const act=getWI(selDay,i);const si=findIdx(e);if(si<0)return;
+    if(!deltas[si])deltas[si]={da:0,dt:0};
+    if(act==='skip')deltas[si].dt++;
+    else if(act==='attend'){deltas[si].da++;deltas[si].dt++;}
+  });
+  let sA=0,sT=0;
+  state.forEach((s,i)=>{
+    const d=deltas[i]||{da:0,dt:0};
+    const a=s.attended+s.da+d.da,t=s.total+s.dt+d.dt;
+    if(t>0){sA+=a;sT+=t;}
+  });
+  const np=sT?sA/sT*100:0,diff=np-orig;
+  const ds=(diff>=0?'+':'')+diff.toFixed(2);
+  const dc=diff<-.5?'#ff2d55':diff>.5?'#00ff87':'#ffd60a';
+  const sk=entries.filter((_,i)=>getWI(selDay,i)==='skip').length;
+  const at=entries.filter((_,i)=>getWI(selDay,i)==='attend').length;
+  document.getElementById('imp-box').innerHTML=`<div class="imp">
+    <div class="imp-t">Impact — ${selDay}</div>
+    <div class="imp-big" style="color:${dc}">${np.toFixed(2)}%</div>
+    <div class="imp-d" style="background:${diff<0?'rgba(255,45,85,.08)':'rgba(0,255,135,.06)'};color:${dc}">${ds}% vs ${orig.toFixed(2)}%</div>
+    <div class="imp-row"><span class="imp-l">Skipped</span><span class="imp-v" style="color:#ff2d55">${sk}</span></div>
+    <div class="imp-row"><span class="imp-l">Attending</span><span class="imp-v" style="color:#00ff87">${at}</span></div>
+    <div class="imp-row"><span class="imp-l">Unmarked</span><span class="imp-v" style="color:#555">${entries.length-sk-at}</span></div>
+    ${np<75&&orig>=75?`<div class="abox" style="background:rgba(255,45,85,.08);border:1px solid rgba(255,45,85,.2);color:#ff2d55">⚠ Drops below 75%!</div>`:''}
+    ${np>=75?`<div class="abox" style="background:rgba(0,255,135,.06);border:1px solid rgba(0,255,135,.15);color:#00ff87">✓ Still safe above 75%</div>`:''}
+  </div>`;
+}
+
+// ══════════════════════════════════════════
+//  SUMMARY
+// ══════════════════════════════════════════
+function renderSummary(){
+  const wd=state.filter(s=>s.total+s.dt>0);
+  const danger=wd.filter(s=>pct(s.attended+s.da,s.total+s.dt)<75).sort((a,b)=>pct(a.attended+a.da,a.total+a.dt)-pct(b.attended+b.da,b.total+b.dt));
+  const safe=wd.filter(s=>pct(s.attended+s.da,s.total+s.dt)>=75).sort((a,b)=>pct(a.attended+a.da,a.total+a.dt)-pct(b.attended+b.da,b.total+b.dt));
+  const tA=state.reduce((s,r)=>s+r.attended+r.da,0),tT=state.reduce((s,r)=>s+r.total+r.dt,0);
+  document.getElementById('sum-content').innerHTML=`
+    <div class="smg">
+      <div class="ss"><div class="ssv">${tA}</div><div class="ssl">Attended</div></div>
+      <div class="ss"><div class="ssv">${tT}</div><div class="ssl">Conducted</div></div>
+      <div class="ss"><div class="ssv" style="color:#ff2d55">${danger.length}</div><div class="ssl">At Risk</div></div>
+      <div class="ss"><div class="ssv" style="color:#00ff87">${safe.length}</div><div class="ssl">Safe</div></div>
+    </div>
+    ${danger.length?`<div class="slbl">⚠ At Risk</div>${danger.map(s=>{const a=s.attended+s.da,t=s.total+s.dt;return`<div class="sr d">${ring(a,t,42)}<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.name}</div><div style="font-size:9px;color:var(--muted);font-family:var(--m);margin-top:1px">${s.type}·${a}/${t}·${pct(a,t).toFixed(1)}%</div>${bm(a,t)}</div></div>`;}).join('')}`:''}
+    ${safe.length?`<div class="slbl" style="margin-top:14px">✓ Safe</div>${safe.map(s=>{const a=s.attended+s.da,t=s.total+s.dt,sk=safeSkips(a,t);return`<div class="sr s">${ring(a,t,42)}<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.name}</div><div style="font-size:9px;color:var(--muted);font-family:var(--m);margin-top:1px">${s.type}·${a}/${t}·${pct(a,t).toFixed(1)}%</div>${sk>0?`<div class="bm bms" style="margin-top:5px">✓ ${sk} skip${sk!==1?'s':''} banked</div>`:''}</div></div>`;}).join('')}`:''}
+  `;
+}
+
+function renderAll(){
+  renderCards('cards-today','chips-today');
+  renderCards('cards-all','chips-all');
+  renderToday();
+  updateOverall();
+  if(curTab==='whatif')renderWhatIf();
+  if(curTab==='summary')renderSummary();
+}
+
+// ══════════════════════════════════════════
+//  SETTINGS (user chip tap)
+// ══════════════════════════════════════════
+function showSettings(){
+  const actions=[
+    {label:'Change Batch',fn:()=>{showScreen('scr-batch');}},
+    {label:'Update Timetable',fn:()=>{showScreen('scr-tt');}},
+    {label:'Sign Out',fn:()=>{
+      ['prn','pw','subjects','lastSync','batch','timetable','ttSkipped'].forEach(k=>localStorage.removeItem('bm_'+k));
+      location.reload();
+    }},
+  ];
+  // Quick native sheet-like prompt
+  const choice=prompt('Settings:\n1. Change Batch\n2. Update Timetable\n3. Sign Out\n\nType 1, 2, or 3:');
+  if(choice==='1')actions[0].fn();
+  else if(choice==='2')actions[1].fn();
+  else if(choice==='3')actions[2].fn();
+}
+
+// ══════════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════════
+function setSS(type,label){
+  const d=document.getElementById('sdot'),l=document.getElementById('slbl');
+  if(d)d.className='sdot '+type;if(l)l.textContent=label;
+}
+function fmtT(iso){if(!iso)return'–';try{return new Date(iso).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});}catch{return'–';}}
+
+// ══════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════
+window.addEventListener('DOMContentLoaded',()=>{
+  username = S.get('username','');
+  password = S.get('pw','');
+  batch   = S.get('batch','2');
+
+  if(username&&password){
+    // Returning user — load cached data and go straight to app
+    const cached=S.get('subjects');
+    if(cached){
+      state=cached.map(s=>({...s,da:0,dt:0}));
+    }
+    loadTimetable();
+    enterApp();
+    // Background sync
+    setTimeout(triggerSync, 1500);
+  } else {
+    // Pre-fill PRN if remembered
+    if(username) document.getElementById('l-prn').value=username;
+    showScreen('scr-login');
+  }
+
+  document.getElementById('l-pwd').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+  document.getElementById('l-prn').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('l-pwd').focus();});
+});
+</script>
+</body>
+</html>
