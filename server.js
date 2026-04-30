@@ -36,7 +36,7 @@ if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
 // ─────────────────────────────────────────────────────────
 app.use(cors({ origin: '*' }));
 app.use(express.json({ limit: '15mb' }));
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(__dirname));
 app.use('/api/', rateLimit({ windowMs: 60_000, max: 40, standardHeaders: true, legacyHeaders: false }));
 
 // ─────────────────────────────────────────────────────────
